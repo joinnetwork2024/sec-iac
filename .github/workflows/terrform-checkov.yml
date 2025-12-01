@@ -36,7 +36,7 @@ jobs:
         run: pip install checkov
 
       - name: Run Checkov
-        run: checkov -d . --download-external-modules
+        run: checkov -d . --download-external-modules true
 
       - name: Run Checkov Scan
         run: checkov -d .
