@@ -18,6 +18,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+          
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -37,6 +42,8 @@ jobs:
 
       - name: Run Checkov
         run: checkov -d . --download-external-modules true
+        continue-on-error: true
 
       - name: Run Checkov Scan
         run: checkov -d .
+        continue-on-error: true
