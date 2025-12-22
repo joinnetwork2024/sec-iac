@@ -36,7 +36,7 @@ jobs:
 
       - name: Terraform init
         run: terraform init 
-        working-directory: dev/${{ matrix.cloud }}
+        working-directory: environments/dev/${{ matrix.cloud }}
 
       - name: Terraform validate
         run: terraform validate
