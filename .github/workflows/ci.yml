@@ -1,0 +1,69 @@
+name: Security IaC CI
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  push:
+    branches: [ main, master ]
+
+jobs:
+  terraform-security-check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Run separately for AWS and Azure folders
+        directory: [terraform-aws, terraform-azure]
+      fail-fast: false  # Continue even if one fails (optional)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ~1.9.0  # or your preferred version
+
+      - name: Install Conftest (OPA wrapper)
+        run: |
+          curl -L https://github.com/open-policy-agent/conftest/releases/download/v0.53.0/conftest_0.53.0_Linux_x86_64.tar.gz | tar -xz
+          sudo mv conftest /usr/local/bin/conftest
+
+      - name: Terraform fmt check
+        run: terraform fmt -check -recursive
+        working-directory: ${{ matrix.directory }}
+        continue-on-error: true  # Optional: fail separately if you want strict fmt
+
+      - name: Terraform init
+        run: terraform init -backend=false
+        working-directory: ${{ matrix.directory }}
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan
+        id: plan
+        run: terraform plan -out=plan.tfplan -detailed-exitcode
+        working-directory: ${{ matrix.directory }}
+        continue-on-error: true  # Allows policy check even on plan changes
+
+      - name: Convert plan to JSON (only if plan succeeded or changed)
+        if: steps.plan.outcome == 'success' || steps.plan.outcome == 'failure'
+        run: |
+          terraform show -json plan.tfplan > plan.json
+        working-directory: ${{ matrix.directory }}
+
+      - name: Run Conftest Policy Check
+        if: steps.plan.outcome == 'success' || steps.plan.outcome == 'failure'
+        run: |
+          conftest test plan.json --policy ../policies/rego --fail-on-warn
+        working-directory: ${{ matrix.directory }}
+        env:
+          CONFTEST_OUTPUT: json
+
+      - name: Upload plan.json as artifact (optional - for debugging)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-${{ matrix.directory }}
+          path: ${{ matrix.directory }}/plan.json

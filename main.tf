@@ -6,6 +6,11 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+
+    vault = {
+      source  = "hashicorp/vault"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -16,6 +21,11 @@ provider "aws" {
 locals {
   name = var.project_name
   tags = var.tags
+}
+
+# Data source to read the secret from a Vault path (e.g., KV v2 engine)
+data "vault_generic_secret" "rds_password" {
+  path = "secret/database/my-app" # Adjust this path to your actual secret location
 }
 
 # ------------------------------------------------------------------------------
@@ -46,6 +56,7 @@ resource "aws_security_group" "alb_sg" {
     from_port   = 80
     to_port     = 80
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow http"
   }
 
   ingress {
@@ -53,6 +64,7 @@ resource "aws_security_group" "alb_sg" {
     from_port   = 443
     to_port     = 443
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow HTTPS from"
   }
 
   egress {
@@ -60,6 +72,7 @@ resource "aws_security_group" "alb_sg" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow all out"
   }
 
   tags = merge(local.tags, { Name = "${local.name}-alb-sg" })
@@ -79,19 +92,20 @@ resource "aws_security_group" "ec2_sg" {
     description     = "Allow HTTP from ALB"
   }
 
-  ingress {
-    protocol    = "tcp"
-    from_port   = 22
-    to_port     = 22
-    cidr_blocks = var.allowed_ssh_cidr
-    description = "Allow SSH from allowed IPs"
-  }
+  # ingress {
+  #   protocol    = "tcp"
+  #   from_port   = 22
+  #   to_port     = 22
+  #   cidr_blocks = var.allowed_ssh_cidr
+  #   description = "Allow SSH from allowed IPs"
+  # }
 
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow all out"
   }
 
   tags = merge(local.tags, { Name = "${local.name}-ec2-sg" })
@@ -247,7 +261,7 @@ module "rds" {
 
   db_name  = "${local.name}db"
   username = "dbadmin"
-  password = var.db_password
+  password = data.vault_generic_secret.rds_password.data["password"]
   port     = 5432
 
   multi_az               = false # Set to true for production HA
