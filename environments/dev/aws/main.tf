@@ -10,8 +10,8 @@ data "aws_subnets" "default" {
 }
 
 resource "aws_security_group" "sagemaker" {
-  name        = "${var.project_name}-sagemaker-sg"
-  vpc_id      = data.aws_vpc.default.id
+  name   = "${var.project_name}-sagemaker-sg"
+  vpc_id = data.aws_vpc.default.id
 
   egress {
     from_port   = 0
@@ -22,20 +22,20 @@ resource "aws_security_group" "sagemaker" {
 }
 # SageMaker API & Runtime Interface Endpoints (PrivateLink) - this enforces private-only access
 resource "aws_vpc_endpoint" "sagemaker_api" {
-  vpc_id            = data.aws_vpc.default.id
-  service_name      = "com.amazonaws.${var.region}.sagemaker.api"
-  vpc_endpoint_type = "Interface"
-  subnet_ids        = data.aws_subnets.default.ids
-  security_group_ids = [aws_security_group.sagemaker.id]
+  vpc_id              = data.aws_vpc.default.id
+  service_name        = "com.amazonaws.${var.region}.sagemaker.api"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = data.aws_subnets.default.ids
+  security_group_ids  = [aws_security_group.sagemaker.id]
   private_dns_enabled = true
 }
 
 resource "aws_vpc_endpoint" "sagemaker_runtime" {
-  vpc_id            = data.aws_vpc.default.id
-  service_name      = "com.amazonaws.${var.region}.sagemaker.runtime"
-  vpc_endpoint_type = "Interface"
-  subnet_ids        = data.aws_subnets.default.ids
-  security_group_ids = [aws_security_group.sagemaker.id]
+  vpc_id              = data.aws_vpc.default.id
+  service_name        = "com.amazonaws.${var.region}.sagemaker.runtime"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = data.aws_subnets.default.ids
+  security_group_ids  = [aws_security_group.sagemaker.id]
   private_dns_enabled = true
 }
 
@@ -59,8 +59,8 @@ resource "aws_iam_role" "sagemaker_execution_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
       Principal = { Service = "sagemaker.amazonaws.com" }
     }]
   })
@@ -91,7 +91,7 @@ resource "aws_sagemaker_model" "superman" {
 
   primary_container {
     image          = "763104318107.dkr.ecr.${var.region}.amazonaws.com/tensorflow-training:2.13.1-cpu.py310-ubuntu20.04-v1"
-    model_data_url = "s3://${aws_s3_bucket.ml_data.bucket}/model/placeholder.tar.gz"  # dummy
+    model_data_url = "s3://${aws_s3_bucket.ml_data.bucket}/model/placeholder.tar.gz" # dummy
   }
 
   # VPC config on the model controls training/job access to private resources
@@ -121,10 +121,10 @@ resource "aws_sagemaker_endpoint" "superman" {
 
 # ==================== Optional: Private Notebook Instance ====================
 resource "aws_sagemaker_notebook_instance" "secure_notebook" {
-  name                  = "${var.project_name}-notebook"
-  instance_type         = "ml.t3.medium"
-  role_arn              = aws_iam_role.sagemaker_execution_role.arn
-  subnet_id             = data.aws_subnets.default.ids[0]
-  security_groups       = [aws_security_group.sagemaker.id]
+  name                   = "${var.project_name}-notebook"
+  instance_type          = "ml.t3.medium"
+  role_arn               = aws_iam_role.sagemaker_execution_role.arn
+  subnet_id              = data.aws_subnets.default.ids[0]
+  security_groups        = [aws_security_group.sagemaker.id]
   direct_internet_access = "Disabled"
 }
