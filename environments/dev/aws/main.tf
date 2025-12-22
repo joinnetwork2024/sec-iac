@@ -20,7 +20,6 @@ resource "aws_security_group" "sagemaker" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
-
 # SageMaker API & Runtime Interface Endpoints (PrivateLink) - this enforces private-only access
 resource "aws_vpc_endpoint" "sagemaker_api" {
   vpc_id            = data.aws_vpc.default.id
