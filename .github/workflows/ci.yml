@@ -35,7 +35,7 @@ jobs:
         working-directory: environments/dev/${{ matrix.cloud }}
 
       - name: Terraform init
-        run: terraform init -backend=false
+        run: terraform init 
         working-directory: dev/${{ matrix.cloud }}
 
       - name: Terraform validate
