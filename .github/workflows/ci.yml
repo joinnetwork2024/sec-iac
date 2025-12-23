@@ -54,8 +54,9 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}   # Secret → use secrets.
-          aws-region: $REGION                           # Variable → use $REGION (injected by environment)
           role-session-name: github-sec-iac
+        env:
+          AWS_REGION: $REGION
 
       - name: Terraform plan
         run: terraform plan -out=plan.tfplan
