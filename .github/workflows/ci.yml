@@ -62,6 +62,7 @@ jobs:
           role-session-name: github-sec-iac
         env:
           ACTIONS_STEP_DEBUG: true
+
           
       - name: Test AWS identity
         if: matrix.cloud == 'aws'
