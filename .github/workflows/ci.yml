@@ -76,7 +76,7 @@ jobs:
         working-directory: environments/dev/${{ matrix.cloud }}
 
       - name: Run Conftest Policy Check (${{ matrix.cloud }})
-        run: conftest test plan.json --policy policies/rego --fail-on-warn
+        run: conftest test plan.json --policy $GITHUB_WORKSPACE/policies/rego --fail-on-warn
         working-directory: environments/dev/${{ matrix.cloud }}
 
       - name: Upload plan artifact (${{ matrix.cloud }})
