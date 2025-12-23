@@ -2,7 +2,7 @@ package sec_iac.ai_ml.security
 
 import rego.v1
 
-allowed_aws_regions := ["us-east-1", "us-west-2"]
+allowed_aws_regions := ["us-east-1", "eu-west-2"]
 allowed_azure_locations := ["ukwest", "westus"]
 
 # AWS
