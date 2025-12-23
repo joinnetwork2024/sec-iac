@@ -63,6 +63,7 @@ jobs:
         env:
           ACTIONS_STEP_DEBUG: true
           
+          
       - name: Test AWS identity
         if: matrix.cloud == 'aws'
         run: aws sts get-caller-identity
