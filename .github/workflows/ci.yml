@@ -49,7 +49,7 @@ jobs:
         run: terraform validate
         working-directory: environments/dev/${{ matrix.cloud }}
 
-- name: Configure AWS Credentials (AWS only)
+      - name: Configure AWS Credentials (AWS only)
         if: matrix.cloud == 'aws'
         uses: aws-actions/configure-aws-credentials@v4
         with:
