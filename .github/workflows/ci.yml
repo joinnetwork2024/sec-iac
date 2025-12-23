@@ -49,15 +49,14 @@ jobs:
         run: terraform validate
         working-directory: environments/dev/${{ matrix.cloud }}
 
-      - name: Configure AWS Credentials (AWS only)
+- name: Configure AWS Credentials (AWS only)
         if: matrix.cloud == 'aws'
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_ARN }}   # or secrets.AWS_ROLE_ARN if you made it a secret
-          aws-region: ${{ vars.REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}   # Secret → use secrets.
+          aws-region: $REGION                           # Variable → use $REGION (injected by environment)
           role-session-name: github-sec-iac
 
-          
       - name: Terraform plan
         run: terraform plan -out=plan.tfplan
         working-directory: environments/dev/${{ matrix.cloud }}
