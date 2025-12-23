@@ -10,6 +10,9 @@ jobs:
   terraform-security-check:
     runs-on: ubuntu-latest
     environment: region   # Gives access to your vars: REGION, LOCATION, PROJECT_NAME
+    permissions:
+      id-token: write      # ← REQUIRED for OIDC token request
+      contents: read       # Good practice for checkout
     strategy:
       matrix:
         cloud: [aws, azure]
