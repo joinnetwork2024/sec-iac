@@ -60,6 +60,8 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}   # Secret → use secrets.
           aws-region: eu-west-2
           role-session-name: github-sec-iac
+        env:
+          ACTIONS_STEP_DEBUG: true
 
       - name: Terraform plan
         run: terraform plan -out=plan.tfplan
