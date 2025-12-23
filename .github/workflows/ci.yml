@@ -52,7 +52,7 @@ jobs:
       - name: Terraform validate
         run: terraform validate
         working-directory: environments/dev/${{ matrix.cloud }}
-
+#AWS
       - name: Configure AWS Credentials (AWS only)
         if: matrix.cloud == 'aws'
         uses: aws-actions/configure-aws-credentials@v4
@@ -66,6 +66,16 @@ jobs:
       - name: Test AWS identity
         if: matrix.cloud == 'aws'
         run: aws sts get-caller-identity
+
+#AZURE
+      - name: Configure azure Credentials (azure only)
+        if: matrix.cloud == 'azure'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
 
       - name: Terraform plan
         run: terraform plan -out=plan.tfplan
