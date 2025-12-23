@@ -9,15 +9,21 @@ on:
 jobs:
   terraform-security-check:
     runs-on: ubuntu-latest
-    environment: region
+    environment: region   # Gives access to your vars: REGION, LOCATION, PROJECT_NAME
     strategy:
       matrix:
         cloud: [aws, azure]
-      fail-fast: false  # Keep running the other cloud even if one fails
+      fail-fast: false
 
     defaults:
       run:
         working-directory: environments/dev/${{ matrix.cloud }}
+
+    env:
+      # These are available globally because of 'environment: region'
+      TF_VAR_region: ${{ vars.REGION }}
+      TF_VAR_location: ${{ vars.LOCATION }}
+      TF_VAR_project_name: ${{ vars.PROJECT_NAME }}
 
     steps:
       - name: Checkout repository
@@ -46,17 +52,11 @@ jobs:
       - name: Terraform plan
         run: terraform plan -out=plan.tfplan
         working-directory: environments/dev/${{ matrix.cloud }}
-        env:
-          TF_VAR_region: ${{ vars.REGION }}
-          TF_VAR_location: ${{ vars.LOCATION }}
-          TF_VAR_project_name: ${{ vars.PROJECT_NAME }}
+
       - name: Convert plan to JSON
         run: terraform show -json plan.tfplan > plan.json
         working-directory: environments/dev/${{ matrix.cloud }}
-        env:
-          TF_VAR_region: ${{ vars.REGION }}
-          TF_VAR_location: ${{ vars.LOCATION }}
-          TF_VAR_project_name: ${{ vars.PROJECT_NAME }}
+
       - name: Run Conftest Policy Check (${{ matrix.cloud }})
         run: conftest test plan.json --policy ../../../../policies/rego --fail-on-warn
         working-directory: environments/dev/${{ matrix.cloud }}
