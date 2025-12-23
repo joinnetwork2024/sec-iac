@@ -79,6 +79,14 @@ jobs:
         run: conftest test plan.json --policy $GITHUB_WORKSPACE/policies/rego --fail-on-warn
         working-directory: environments/dev/${{ matrix.cloud }}
 
+      - name: List Loaded Policies (Debug)
+        run: |
+            conftest test plan.json --policy $GITHUB_WORKSPACE/policies/rego --all-namespaces --output json | jq '.[].namespace'
+
+      - name: Force a Violation for Testing
+        run: |
+            echo 'package main\nviolation[msg] { msg := "DEBUG: Policies are loading correctly" }' > $GITHUB_WORKSPACE/policies/rego/debug.rego
+
       - name: Upload plan artifact (${{ matrix.cloud }})
         uses: actions/upload-artifact@v4
         with:
