@@ -60,6 +60,7 @@ resource "azurerm_private_dns_zone_virtual_network_link" "kv_link" {
   virtual_network_id    = azurerm_virtual_network.ml_vnet.id
 }
 
+
 # Supporting Resources
 resource "azurerm_application_insights" "ml_ai" {
   name                = "${var.project_name}-ai"
