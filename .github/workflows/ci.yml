@@ -76,7 +76,6 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-
       - name: Terraform plan
         run: terraform plan -out=plan.tfplan
         working-directory: environments/dev/${{ matrix.cloud }}
