@@ -68,8 +68,6 @@ resource "azurerm_application_insights" "ml_ai" {
   application_type    = "web"
 }
 
-
-
 resource "azurerm_key_vault" "ml_kv" {
   name                     = substr("${replace(var.project_name, "-", "")}kv", 0, 24)
   location                 = azurerm_resource_group.ml_rg.location
