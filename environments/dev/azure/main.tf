@@ -52,7 +52,6 @@ resource "azurerm_private_dns_zone" "acr" {
   resource_group_name = azurerm_resource_group.ml_rg.name
 }
 
-
 # VNet Links (add for each zone as needed)
 resource "azurerm_private_dns_zone_virtual_network_link" "kv_link" {
   name                  = "kv-link"
@@ -60,7 +59,6 @@ resource "azurerm_private_dns_zone_virtual_network_link" "kv_link" {
   private_dns_zone_name = azurerm_private_dns_zone.kv.name
   virtual_network_id    = azurerm_virtual_network.ml_vnet.id
 }
-
 
 # Supporting Resources
 resource "azurerm_application_insights" "ml_ai" {
