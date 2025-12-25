@@ -3,7 +3,7 @@ package sec_iac.ai_ml.security
 # --- AWS RULES ---
 
 # AWS: Deny model deployment if model signature is missing
-deny contains msg if {
+deny[msg] {
     resource := input.resource_changes[_]
     resource.type == "aws_sagemaker_model"
     not resource.change.after.signature
@@ -11,7 +11,7 @@ deny contains msg if {
 }
 
 # AWS: Deny deployment of models with an unapproved version
-deny contains msg if {
+deny[msg] {
     resource := input.resource_changes[_]
     resource.type == "aws_sagemaker_model"
     version := resource.change.after.version
@@ -22,7 +22,7 @@ deny contains msg if {
 # --- AZURE RULES ---
 
 # Azure: Deny model deployment if model signature is missing
-deny contains msg if {
+deny[msg] {
     resource := input.resource_changes[_]
     resource.type == "azurerm_machine_learning_model"
     not resource.change.after.signature
@@ -30,7 +30,7 @@ deny contains msg if {
 }
 
 # Azure: Deny deployment of models with an unapproved version
-deny contains msg if {
+deny[msg] {
     resource := input.resource_changes[_]
     resource.type == "azurerm_machine_learning_model"
     version := resource.change.after.version
@@ -41,7 +41,7 @@ deny contains msg if {
 # --- HELPER RULES ---
 
 # Approved model versions
-approved_version(version) if {
+approved_version(version) {
     valid_versions := {"1.0.0", "1.1.0", "2.0.0"}
     valid_versions[version]
 }
