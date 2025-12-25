@@ -52,6 +52,7 @@ resource "azurerm_private_dns_zone" "acr" {
   resource_group_name = azurerm_resource_group.ml_rg.name
 }
 
+
 # VNet Links (add for each zone as needed)
 resource "azurerm_private_dns_zone_virtual_network_link" "kv_link" {
   name                  = "kv-link"
