@@ -99,6 +99,11 @@ resource "aws_sagemaker_model" "superman" {
     security_group_ids = [aws_security_group.sagemaker.id]
     subnets            = data.aws_subnets.default.ids
   }
+
+  tags = {
+    signature = "sha256-abc123456789def"
+    version   = "1.0.0"
+  }
 }
 
 # ==================== SageMaker Endpoint Configuration (NO vpc_config, NO data_capture_config) ====================
