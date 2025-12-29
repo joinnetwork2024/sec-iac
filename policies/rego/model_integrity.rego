@@ -1,28 +1,31 @@
 package sec_iac.ai_ml.security
 
+import rego.v1
+
 # --- AWS RULES ---
 
 # AWS: Deny model deployment if model signature is missing
-deny[msg] {
+deny contains msg if {
     resource := input.resource_changes[_]
     resource.type == "aws_sagemaker_model"
-    not resource.change.after.signature
-    msg := sprintf("AWS SageMaker model '%s' must have a valid signature.", [resource.address])
+    signature := resource.change.after.tags["signature"]
+    not signature
+    msg := sprintf("AWS SageMaker model '%s' must have a non-empty 'signature' tag.", [resource.address])
 }
 
 # AWS: Deny deployment of models with an unapproved version
-deny[msg] {
+deny contains msg if {
     resource := input.resource_changes[_]
     resource.type == "aws_sagemaker_model"
-    version := resource.change.after.version
-    not approved_version(version)
+    version := resource.change.after.tags["version"]
+    not approved_version(version) # Fixed reference to helper function
     msg := sprintf("AWS SageMaker model '%s' version '%s' is not approved.", [resource.address, version])
 }
 
 # --- AZURE RULES ---
 
 # Azure: Deny model deployment if model signature is missing
-deny[msg] {
+deny contains msg if {
     resource := input.resource_changes[_]
     resource.type == "azurerm_machine_learning_model"
     not resource.change.after.signature
@@ -30,7 +33,7 @@ deny[msg] {
 }
 
 # Azure: Deny deployment of models with an unapproved version
-deny[msg] {
+deny contains msg if {
     resource := input.resource_changes[_]
     resource.type == "azurerm_machine_learning_model"
     version := resource.change.after.version
@@ -41,7 +44,7 @@ deny[msg] {
 # --- HELPER RULES ---
 
 # Approved model versions
-approved_version(version) {
+approved_version(version) if {
     valid_versions := {"1.0.0", "1.1.0", "2.0.0"}
     valid_versions[version]
 }
