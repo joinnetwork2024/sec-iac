@@ -13,11 +13,16 @@ resource "aws_security_group" "sagemaker" {
   name   = "${var.project_name}-sagemaker-sg"
   vpc_id = data.aws_vpc.default.id
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+egress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"] # Your VPC CIDR
+    description = "Allow HTTPS traffic to internal VPC endpoints only"
+  }
+
+  tags = {
+    Name = "secure-ai-sg"
   }
 }
 # SageMaker API & Runtime Interface Endpoints (PrivateLink) - this enforces private-only access
@@ -39,7 +44,7 @@ resource "aws_vpc_endpoint" "sagemaker_runtime" {
   private_dns_enabled = true
 }
 
-# Optional: S3 Gateway Endpoint (for private S3 access)
+# S3 Gateway Endpoint (for private S3 access)
 resource "aws_vpc_endpoint" "s3" {
   vpc_id            = data.aws_vpc.default.id
   service_name      = "com.amazonaws.${var.region}.s3"
