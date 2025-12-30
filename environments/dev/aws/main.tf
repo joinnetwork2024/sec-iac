@@ -13,7 +13,7 @@ resource "aws_security_group" "sagemaker" {
   name   = "${var.project_name}-sagemaker-sg"
   vpc_id = data.aws_vpc.default.id
 
-egress {
+  egress {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
