@@ -91,8 +91,9 @@ resource "aws_iam_role_policy" "s3_access" {
 
 # ==================== SageMaker Model (VPC config here is valid) ====================
 resource "aws_sagemaker_model" "superman" {
-  name               = "${var.project_name}-model"
-  execution_role_arn = aws_iam_role.sagemaker_execution_role.arn
+  name                     = "${var.project_name}-model"
+  execution_role_arn       = aws_iam_role.sagemaker_execution_role.arn
+  enable_network_isolation = true
 
   primary_container {
     image          = "763104318107.dkr.ecr.${var.region}.amazonaws.com/tensorflow-training:2.13.1-cpu.py310-ubuntu20.04-v1"
