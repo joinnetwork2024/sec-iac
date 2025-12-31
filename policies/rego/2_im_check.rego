@@ -3,7 +3,7 @@ package sec_iac.ai_ml.security
 import rego.v1
 
 # --- CONFIGURATION: Approved Identities ---
-approved_aws_services := {"sagemaker.amazonaws.com"}
+approved_aws_services := {"sagemaker.amazonaws.com", "lambda.amazonaws.com"}
 approved_azure_principals := {"ServicePrincipal", "UserAssigned"}
 
 # ==========================================================
@@ -20,6 +20,21 @@ deny contains msg if {
     
     not service in approved_aws_services
     msg := sprintf("AWS IAM ERROR [%s]: Unauthorized service '%s'. Must be: %v", [resource.name, service, approved_aws_services])
+}
+
+# NEW: Contextual Check - If it's Lambda, it MUST have a security tag
+deny contains msg if {
+    resource := input.resource_changes[_]
+    resource.type == "aws_iam_role"
+    
+    policy := json.unmarshal(resource.change.after.assume_role_policy)
+    service := policy.Statement[_].Principal.Service
+    
+    service == "lambda.amazonaws.com"
+    tags := object.get(resource.change.after, "tags", {})
+    tags["purpose"] != "security_remediation"
+    
+    msg := sprintf("AWS GOVERNANCE ERROR [%s]: Lambda roles are only permitted for 'security_remediation' purposes. Missing required tag.", [resource.name])
 }
 
 deny contains msg if {
