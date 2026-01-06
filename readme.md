@@ -1,44 +1,134 @@
-# 🛡️ sec-iac: Secure AI/ML Multi-Cloud Infrastructure
+# 🛡️ sec-iac — AI-First Security Governance for Multi-Cloud AI/ML
 
-This repository implements a **Production-Ready, Multi-Cloud (AWS & Azure)** infrastructure baseline with a heavy focus on **AI/ML Security Governance**. It uses **Open Policy Agent (OPA)** and **Checkov** to enforce a "Shift-Left" security model.
+---
 
-## 🚀 AI/ML Governance PoC
-The core of this project is a set of **Rego policies** that sit in the CI/CD pipeline, acting as a gatekeeper to prevent insecure AI workloads from reaching production.
+## 🚀 Overview
 
-### Key Security Guardrails
-1. **Data Residency:** Training data is locked to the UK (`eu-west-2`) to meet sovereign data requirements.
-2. **Network Isolation:** All AI model endpoints (SageMaker/Azure ML) are required to have Network Isolation enabled.
-3. **Encryption at Rest:** Mandates AWS KMS / Azure Key Vault encryption for all model artifacts.
-4. **Least Privilege:** Validates that AI execution roles do not possess broad administrative permissions.
+**sec-iac** is a **production-ready, multi-cloud (AWS & Azure) security governance framework** purpose-built for **AI/ML workloads**. It applies **policy-as-code** and **shift-left security controls** to ensure AI infrastructure complies with strict security and regulatory requirements *before* it ever reaches production.
 
-## 🏗️ Architecture
-The project follows the **C4 Model** for architectural clarity:
-- **System Context:** High-level view of developer interaction with OPA.
-- **Container View:** Integration of OPA CLI within GitHub Actions.
-- **Component View:** Breakdown of specific Rego policy modules.
+This repository represents an **intentional evolution** from general secure Infrastructure-as-Code toward **AI/ML-first security governance**, addressing risks unique to model training, inference, and data handling.
 
-## 🛠️ Tech Stack
-- **IaC:** Terraform (AWS & Azure)
-- **Security Logic:** OPA (Rego)
-- **Static Analysis:** Checkov
-- **CI/CD:** GitHub Actions
-- **Diagrams:** Structurizr (C4 DSL)
+> **Architecture Philosophy**
+>
+> * 🧠 **sec-iac** — *The Brain*: AI/ML governance, compliance rules, and policy enforcement
+> * 🧱 **multi-cloud-secure-tf** — *The Body*: secure infrastructure foundations
+>
+> 👉 Start with [multi-cloud-secure-tf](https://github.com/joinnetwork2024/multi-cloud-secure-tf) for baseline infrastructure, then layer **sec-iac** for AI/ML governance.
+
+---
+
+## 🎯 Why sec-iac Exists
+
+Traditional cloud security baselines are not sufficient for AI/ML workloads. AI systems introduce new risks such as:
+
+* Sensitive training data residency violations
+* Public or weakly isolated inference endpoints
+* Over-privileged execution roles
+* Lack of enforceable governance before deployment
+
+**sec-iac** solves these problems by embedding AI-aware security controls directly into the CI/CD pipeline.
+
+---
+
+## ✨ Core AI/ML Security Guardrails
+
+### 🧠 Policy-as-Code Enforcement
+
+Rego policies act as **gatekeepers** in CI/CD, preventing non-compliant AI infrastructure from being provisioned.
+
+### 🔒 Key Guardrails Implemented
+
+* **Data Residency Enforcement**
+  Training and model data is restricted to approved regions (e.g. UK / `eu-west-2`).
+
+* **Model & Endpoint Network Isolation**
+  SageMaker and Azure ML endpoints must have network isolation enabled to mitigate data exfiltration risks.
+
+* **Encryption at Rest**
+  Mandatory use of AWS KMS and Azure Key Vault for datasets and model artifacts.
+
+* **Least-Privilege AI Roles**
+  Validation that AI execution roles do not include broad or administrative permissions.
+
+---
+
+## 🏗️ Architecture Approach
+
+The project follows the **C4 Model** to clearly document how governance is enforced:
+
+* **System Context** — Developer interaction with policy enforcement
+* **Container View** — OPA CLI integrated into GitHub Actions
+* **Component View** — Individual Rego policy modules
+
+This structure ensures both **technical clarity** and **audit readiness**.
+
+---
+
+## 🛠️ Technology Stack
+
+* **Infrastructure-as-Code**: Terraform (AWS & Azure)
+* **Policy Engine**: Open Policy Agent (OPA / Rego)
+* **Static Security Analysis**: Checkov
+* **CI/CD**: GitHub Actions
+* **Architecture Diagrams**: Structurizr (C4 DSL)
+
+---
 
 ## 🚦 Getting Started
-1. **Local Validation:**
-   ```bash
-   terraform plan -out=tfplan.binary
-   terraform show -json tfplan.binary > tfplan.json
-   opa exec --decision terraform/analysis/deny --bundle policies/ tfplan.json
 
-# Secure IaC with AI/ML Focus (sec-iac)
+### Local Policy Validation
 
-## Project Evolution and Pivot
-This repository evolved from foundational multi-cloud secure IaC practices (as seen in our [multi-cloud-secure-tf](https://github.com/joinnetwork2024/multi-cloud-secure-tf) repository) to an intentional focus on **AI/ML security governance**. The pivot addresses the growing need for robust security in AI/ML workloads, building on general security baselines to include specialized guardrails like policy-enforced data residency, isolated AI endpoints, encryption for ML datasets, and validation of execution roles. This ensures compliance and risk mitigation in production AI environments while maintaining the core principles of shift-left security.
+```bash
+terraform plan -out=tfplan.binary
+terraform show -json tfplan.binary > tfplan.json
+opa exec --decision terraform/analysis/deny --bundle policies/ tfplan.json
+```
 
-For users starting with general multi-cloud setups, begin with `multi-cloud-secure-tf` and transition here for AI/ML-specific enhancements. This structure allows seamless navigation: use `multi-cloud-secure-tf` for broad infrastructure security, and `sec-iac` for targeted AI/ML governance.
+This workflow simulates CI/CD enforcement locally, allowing developers to detect policy violations early.
 
-The repository **sec-iac** implements a **Production-Ready, Multi-Cloud (AWS & Azure)** infrastructure baseline with a heavy focus on **AI/ML Security Governance**. It uses **Open Policy Agent (OPA)** and **Checkov** to enforce a "Shift-Left" security model through Rego policies in the CI/CD pipeline.
+---
+
+## 📂 Repository Structure
+
+```text
+├── .github/workflows       # CI/CD pipelines (plan, validate, Checkov, OPA)
+├── environments/dev        # Development environments (AWS & Azure)
+├── modules/networking      # Secure networking modules
+├── policies/rego           # AI/ML governance policies (OPA/Rego)
+├── main.tf                 # Root Terraform configuration
+├── vault.tf                # Secrets & encryption configuration
+└── outputs.tf              # Terraform outputs
+```
+
+---
+
+## 🔄 Project Evolution
+
+This repository evolved from general **secure multi-cloud IaC practices** into a focused **AI/ML security governance layer**.
+
+* **Then**: Secure-by-default cloud infrastructure
+* **Now**: AI-aware compliance, data controls, and model governance
+
+This evolution enables teams to progressively mature their security posture—from infrastructure security to **AI governance at scale**.
+
+---
+
+## 🧭 Navigation Guide
+
+* Looking for **secure cloud foundations**? → Start with **multi-cloud-secure-tf**
+* Need **AI/ML compliance, governance, and policy enforcement**? → You are in **sec-iac**
+
+Together, these repositories provide an end-to-end path from **secure infrastructure** to **governed AI systems**.
+
+---
+
+## 📜 License
+
+MIT License
+
+---
+
+**sec-iac enables teams to deploy AI faster—without sacrificing security, compliance, or control.**
 
 ### Key Features:
 - **AI/ML Governance PoC**: Rego policies act as gatekeepers to prevent insecure AI workloads from reaching production.
