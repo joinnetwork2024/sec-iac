@@ -35,6 +35,7 @@ resource "aws_vpc_endpoint" "sagemaker_api" {
   private_dns_enabled = true
 }
 
+
 resource "aws_vpc_endpoint" "sagemaker_runtime" {
   vpc_id              = data.aws_vpc.default.id
   service_name        = "com.amazonaws.${var.region}.sagemaker.runtime"
