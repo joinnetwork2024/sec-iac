@@ -1,19 +1,23 @@
 name: Security IaC CI
 
-
 on:
   pull_request:
     branches: [ master ]
   push:
     branches: [ master ]
 
+permissions:
+  contents: read
+  id-token: write
+
+############################################
+# JOB 1: Terraform IaC Security (AWS + Azure)
+############################################
 jobs:
   terraform-security-check:
     runs-on: ubuntu-latest
-    environment: region   # Gives access to your vars: REGION, LOCATION, PROJECT_NAME
-    permissions:
-      id-token: write      # ← REQUIRED for OIDC token request
-      contents: read       # Good practice for checkout
+    environment: region
+
     strategy:
       matrix:
         cloud: [aws, azure]
@@ -24,7 +28,6 @@ jobs:
         working-directory: environments/dev/${{ matrix.cloud }}
 
     env:
-      # These are available globally because of 'environment: region'
       TF_VAR_region: ${{ vars.REGION }}
       TF_VAR_location: ${{ vars.LOCATION }}
       TF_VAR_project_name: ${{ vars.PROJECT_NAME }}
@@ -43,32 +46,32 @@ jobs:
 
       - name: Terraform fmt check
         run: terraform fmt -check
-        working-directory: environments/dev/${{ matrix.cloud }}
 
       - name: Terraform init
-        run: terraform init 
-        working-directory: environments/dev/${{ matrix.cloud }}
+        run: terraform init
 
       - name: Terraform validate
         run: terraform validate
-        working-directory: environments/dev/${{ matrix.cloud }}
-#AWS
-      - name: Configure AWS Credentials (AWS only)
+
+      ############################################
+      # AWS Authentication
+      ############################################
+      - name: Configure AWS Credentials
         if: matrix.cloud == 'aws'
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}   # Secret → use secrets.
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: eu-west-2
           role-session-name: github-sec-iac
-        env:
-          ACTIONS_STEP_DEBUG: true
-                    
+
       - name: Test AWS identity
         if: matrix.cloud == 'aws'
         run: aws sts get-caller-identity
 
-#AZURE
-      - name: Configure azure Credentials (azure only)
+      ############################################
+      # Azure Authentication
+      ############################################
+      - name: Configure Azure Credentials
         if: matrix.cloud == 'azure'
         uses: azure/login@v2
         with:
@@ -76,28 +79,86 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      ############################################
+      # Terraform Plan + Policy Enforcement
+      ############################################
       - name: Terraform plan
         run: terraform plan -out=plan.tfplan
-        working-directory: environments/dev/${{ matrix.cloud }}
 
       - name: Convert plan to JSON
         run: terraform show -json plan.tfplan > plan.json
-        working-directory: environments/dev/${{ matrix.cloud }}
 
-      - name: Run Conftest Policy Check (${{ matrix.cloud }})
-        run: conftest test plan.json --policy $GITHUB_WORKSPACE/policies/rego --fail-on-warn --all-namespaces
-        working-directory: environments/dev/${{ matrix.cloud }}
-
-      - name: List Loaded Policies (Debug)
+      - name: Run Conftest IaC Policies
         run: |
-            conftest test plan.json --policy $GITHUB_WORKSPACE/policies/rego --all-namespaces --output json | jq '.[].namespace'
+          conftest test plan.json \
+            --policy $GITHUB_WORKSPACE/policies/rego \
+            --all-namespaces \
+            --fail-on-warn
 
-      - name: Force a Violation for Testing
-        run: |
-            echo 'package main\nviolation[msg] { msg := "DEBUG: Policies are loading correctly" }' > $GITHUB_WORKSPACE/policies/rego/debug.rego
-
-      - name: Upload plan artifact (${{ matrix.cloud }})
+      - name: Upload Terraform plan artifact
         uses: actions/upload-artifact@v4
         with:
-          name: plan-${{ matrix.cloud }}
+          name: tf-plan-${{ matrix.cloud }}
           path: environments/dev/${{ matrix.cloud }}/plan.json
+
+############################################
+# JOB 2: AI Model Container Supply Chain Security
+############################################
+  ai-image-security:
+    runs-on: ubuntu-latest
+    needs: terraform-security-check
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Trivy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
+          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.50.1_Linux-64bit.deb
+          sudo dpkg -i trivy_0.50.1_Linux-64bit.deb
+
+      - name: Install Conftest
+        run: |
+          curl -L https://github.com/open-policy-agent/conftest/releases/download/v0.53.0/conftest_0.53.0_Linux_x86_64.tar.gz | tar -xz
+          sudo mv conftest /usr/local/bin/conftest
+
+      ############################################
+      # Build AI Model Container
+      ############################################
+      - name: Build AI model image
+        run: |
+          docker build -t ai-model:${{ github.sha }} .
+
+      ############################################
+      # Vulnerability Scan
+      ############################################
+      - name: Scan image with Trivy
+        run: |
+          trivy image \
+            --format json \
+            --output trivy.json \
+            ai-model:${{ github.sha }}
+
+      ############################################
+      # Normalize CVE Data for OPA
+      ############################################
+      - name: Normalize vulnerability data
+        run: |
+          jq '{
+            vulnerabilities: {
+              critical: ([.Results[].Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length),
+              high: ([.Results[].Vulnerabilities[]? | select(.Severity=="HIGH")] | length)
+            }
+          }' trivy.json > opa-input.json
+
+      ############################################
+      # OPA / Rego Policy Enforcement
+      ############################################
+      - name: Run AI image security policies
+        run: |
+          conftest test opa-input.json \
+            --policy policies/rego \
+            --namespace sec_iac.ai_ml.security \
+            --fail-on-warn
