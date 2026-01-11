@@ -120,7 +120,7 @@ jobs:
       ############################################
       # Vulnerability Scan (Trivy via Docker)
       ############################################
-      - name: Scan image with Trivy (remote)
+      - name: Scan AI model image with Trivy
         run: |
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
@@ -129,7 +129,7 @@ jobs:
             image \
             --format json \
             --output /work/trivy.json \
-            public.ecr.aws/my-org/ai-model:latest
+            public.ecr.aws/docker/library/python:3.11-slim
 
       ############################################
       # Normalize CVE Data for OPA
