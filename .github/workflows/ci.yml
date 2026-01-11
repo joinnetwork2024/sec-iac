@@ -104,9 +104,6 @@ jobs:
 ############################################
 # JOB 2: AI Model Container Supply Chain Security
 ############################################
-############################################
-# JOB 2: AI Model Container Supply Chain Security
-############################################
   ai-image-security:
     runs-on: ubuntu-latest
     needs: terraform-security-check
@@ -121,16 +118,9 @@ jobs:
           sudo mv conftest /usr/local/bin/conftest
 
       ############################################
-      # Build AI Model Container
-      ############################################
-      - name: Build AI model image
-        run: |
-          docker build -t ai-model:${{ github.sha }} .
-
-      ############################################
       # Vulnerability Scan (Trivy via Docker)
       ############################################
-      - name: Scan image with Trivy
+      - name: Scan image with Trivy (remote)
         run: |
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
@@ -139,7 +129,7 @@ jobs:
             image \
             --format json \
             --output /work/trivy.json \
-            ai-model:${{ github.sha }}
+            public.ecr.aws/my-org/ai-model:latest
 
       ############################################
       # Normalize CVE Data for OPA
