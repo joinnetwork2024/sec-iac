@@ -4,7 +4,7 @@ data "azurerm_client_config" "current" {}
 resource "azurerm_resource_group" "ml_rg" {
   name     = "${var.project_name}-rg"
   location = var.location
-  tags          = local.common_tags
+  tags     = local.common_tags
 }
 
 # Virtual Network & Subnets
@@ -13,7 +13,7 @@ resource "azurerm_virtual_network" "ml_vnet" {
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.ml_rg.location
   resource_group_name = azurerm_resource_group.ml_rg.name
-  tags          = local.common_tags
+  tags                = local.common_tags
 }
 
 resource "azurerm_subnet" "private_endpoint_subnet" {
@@ -22,7 +22,7 @@ resource "azurerm_subnet" "private_endpoint_subnet" {
   virtual_network_name                           = azurerm_virtual_network.ml_vnet.name
   address_prefixes                               = ["10.0.1.0/24"]
   enforce_private_link_endpoint_network_policies = true
-  
+
 }
 
 resource "azurerm_subnet" "training_subnet" {
@@ -30,7 +30,7 @@ resource "azurerm_subnet" "training_subnet" {
   resource_group_name  = azurerm_resource_group.ml_rg.name
   virtual_network_name = azurerm_virtual_network.ml_vnet.name
   address_prefixes     = ["10.0.2.0/24"]
-  
+
 }
 
 resource "azurerm_subnet" "aks_subnet" {
@@ -38,7 +38,7 @@ resource "azurerm_subnet" "aks_subnet" {
   resource_group_name  = azurerm_resource_group.ml_rg.name
   virtual_network_name = azurerm_virtual_network.ml_vnet.name
   address_prefixes     = ["10.0.3.0/24"]
-  
+
 }
 
 # Private DNS Zones (essential)
@@ -63,7 +63,7 @@ resource "azurerm_private_dns_zone_virtual_network_link" "kv_link" {
   resource_group_name   = azurerm_resource_group.ml_rg.name
   private_dns_zone_name = azurerm_private_dns_zone.kv.name
   virtual_network_id    = azurerm_virtual_network.ml_vnet.id
-  tags          = local.common_tags
+  tags                  = local.common_tags
 }
 
 # Supporting Resources
@@ -72,7 +72,7 @@ resource "azurerm_application_insights" "ml_ai" {
   location            = azurerm_resource_group.ml_rg.location
   resource_group_name = azurerm_resource_group.ml_rg.name
   application_type    = "web"
-  tags          = local.common_tags
+  tags                = local.common_tags
 }
 
 resource "azurerm_key_vault" "ml_kv" {
@@ -87,7 +87,7 @@ resource "azurerm_key_vault" "ml_kv" {
     default_action = "Deny"
     bypass         = "AzureServices"
   }
-  tags          = local.common_tags
+  tags = local.common_tags
 }
 
 resource "azurerm_storage_account" "ml_storage" {
@@ -96,7 +96,7 @@ resource "azurerm_storage_account" "ml_storage" {
   resource_group_name      = azurerm_resource_group.ml_rg.name
   account_tier             = "Standard"
   account_replication_type = "GRS"
-  tags          = local.common_tags
+  tags                     = local.common_tags
   network_rules {
     default_action = "Deny"
     bypass         = ["AzureServices"]
@@ -110,7 +110,7 @@ resource "azurerm_container_registry" "ml_acr" {
   sku                           = "Premium"
   admin_enabled                 = true
   public_network_access_enabled = false
-  tags          = local.common_tags
+  tags                          = local.common_tags
 }
 
 # Private Endpoints for dependencies
@@ -126,7 +126,7 @@ resource "azurerm_private_endpoint" "kv_pe" {
     subresource_names              = ["vault"]
     is_manual_connection           = false
   }
-  tags          = local.common_tags
+  tags = local.common_tags
   private_dns_zone_group {
     name                 = "kv-dns"
     private_dns_zone_ids = [azurerm_private_dns_zone.kv.id]
@@ -146,7 +146,7 @@ resource "azurerm_machine_learning_workspace" "ml_workspace" {
   container_registry_id   = azurerm_container_registry.ml_acr.id
 
   public_network_access_enabled = false
-  tags          = local.common_tags
+  tags                          = local.common_tags
   identity {
     type = "SystemAssigned"
   }

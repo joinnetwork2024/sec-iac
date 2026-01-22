@@ -20,7 +20,7 @@ resource "aws_security_group" "sagemaker" {
     cidr_blocks = ["10.0.0.0/16"] # Your VPC CIDR
     description = "Allow HTTPS traffic to internal VPC endpoints only"
   }
-  tags          = local.common_tags
+  tags = local.common_tags
 
 }
 # SageMaker API & Runtime Interface Endpoints (PrivateLink) - this enforces private-only access
@@ -31,7 +31,7 @@ resource "aws_vpc_endpoint" "sagemaker_api" {
   subnet_ids          = data.aws_subnets.default.ids
   security_group_ids  = [aws_security_group.sagemaker.id]
   private_dns_enabled = true
-  tags          = local.common_tags
+  tags                = local.common_tags
 }
 
 
@@ -42,7 +42,7 @@ resource "aws_vpc_endpoint" "sagemaker_runtime" {
   subnet_ids          = data.aws_subnets.default.ids
   security_group_ids  = [aws_security_group.sagemaker.id]
   private_dns_enabled = true
-  tags          = local.common_tags
+  tags                = local.common_tags
 }
 
 # S3 Gateway Endpoint (for private S3 access)
@@ -51,13 +51,13 @@ resource "aws_vpc_endpoint" "s3" {
   service_name      = "com.amazonaws.${var.region}.s3"
   vpc_endpoint_type = "Gateway"
   route_table_ids   = data.aws_vpc.default.main_route_table_id != "" ? [data.aws_vpc.default.main_route_table_id] : null
-  tags          = local.common_tags
+  tags              = local.common_tags
 }
 
 # ==================== S3 Bucket (Data Residency) ====================
 resource "aws_s3_bucket" "ml_data" {
   bucket = "${var.project_name}-ml-data-2025"
-  tags          = local.common_tags
+  tags   = local.common_tags
 }
 
 # ==================== IAM Role (Least Privilege) ====================

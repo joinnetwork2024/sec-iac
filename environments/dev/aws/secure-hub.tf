@@ -73,7 +73,7 @@ resource "aws_lambda_function" "s3_fixer" {
       LOG_LEVEL = "INFO"
     }
   }
-  tags          = local.common_tags
+  tags = local.common_tags
 }
 
 # 5. Allow EventBridge to trigger the Lambda
@@ -89,7 +89,7 @@ resource "aws_lambda_permission" "allow_eventbridge" {
 resource "aws_cloudwatch_event_rule" "remediate_s3_public" {
   name        = "remediate-s3-public-access"
   description = "Triggers Lambda when Security Hub finds a public S3 bucket"
-  tags          = local.common_tags
+  tags        = local.common_tags
   # Filters for "S3.1" failure (Block Public Access disabled)
   event_pattern = jsonencode({
     "source" : ["aws.securityhub"],
