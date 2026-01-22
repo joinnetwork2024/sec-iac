@@ -77,11 +77,13 @@ resource "aws_iam_role" "sagemaker_execution_role" {
 resource "aws_iam_role_policy_attachment" "sagemaker_full" {
   role       = aws_iam_role.sagemaker_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSageMakerFullAccess"
+
 }
 
 resource "aws_iam_role_policy" "s3_access" {
   name = "S3Access"
   role = aws_iam_role.sagemaker_execution_role.id
+
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -109,16 +111,17 @@ resource "aws_sagemaker_model" "superman" {
     subnets            = data.aws_subnets.default.ids
   }
 
-  tags = {
+  tags = merge(local.common_tags, {
     signature = "sha256-abc123456789def"
     version   = "1.0.0"
-  }
+    }
+  )
 }
 
 # ==================== SageMaker Endpoint Configuration (NO vpc_config, NO data_capture_config) ====================
 resource "aws_sagemaker_endpoint_configuration" "superman" {
   name = "${var.project_name}-ep-config"
-
+  tags = local.common_tags
   production_variants {
     initial_instance_count = 1
     instance_type          = "ml.t2.medium"
@@ -131,6 +134,7 @@ resource "aws_sagemaker_endpoint_configuration" "superman" {
 resource "aws_sagemaker_endpoint" "superman" {
   name                 = "${var.project_name}-endpoint"
   endpoint_config_name = aws_sagemaker_endpoint_configuration.superman.name
+  tags                 = local.common_tags
 }
 
 # ==================== Optional: Private Notebook Instance ====================
@@ -141,4 +145,5 @@ resource "aws_sagemaker_notebook_instance" "secure_notebook" {
   subnet_id              = data.aws_subnets.default.ids[0]
   security_groups        = [aws_security_group.sagemaker.id]
   direct_internet_access = "Disabled"
+  tags                   = local.common_tags
 }

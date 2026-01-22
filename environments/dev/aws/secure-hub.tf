@@ -60,12 +60,12 @@ resource "aws_iam_role_policy" "remediation_policy" {
 
 # 4. The Lambda Function
 resource "aws_lambda_function" "s3_fixer" {
-  filename      = data.archive_file.lambda_zip.output_path
-  function_name = "sec-iac-s3-public-remediator"
-  role          = aws_iam_role.remediation_role.arn
-  handler       = "remediate_s3.lambda_handler"
-  runtime       = "python3.10"
-
+  filename         = data.archive_file.lambda_zip.output_path
+  function_name    = "sec-iac-s3-public-remediator"
+  role             = aws_iam_role.remediation_role.arn
+  handler          = "remediate_s3.lambda_handler"
+  runtime          = "python3.10"
+  tags             = local.common_tags
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
 
   environment {
@@ -73,7 +73,7 @@ resource "aws_lambda_function" "s3_fixer" {
       LOG_LEVEL = "INFO"
     }
   }
-  tags = local.common_tags
+
 }
 
 # 5. Allow EventBridge to trigger the Lambda
