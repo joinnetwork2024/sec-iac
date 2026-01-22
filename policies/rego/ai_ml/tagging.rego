@@ -17,6 +17,14 @@ important_types := {
     "aws_sagemaker_endpoint_configuration",
     "aws_security_group",
     "aws_vpc_endpoint",
+    # Azure (common AI/ML + data resources)
+    "azurerm_storage_account",
+    "azurerm_machine_learning_workspace",
+    "azurerm_virtual_machine",
+    "azurerm_container_instance",
+    "azurerm_kubernetes_cluster",
+    "azurerm_sql_server",
+    "azurerm_network_security_group",
 }
 
 # ── Decision API ──
