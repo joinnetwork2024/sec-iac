@@ -195,7 +195,7 @@ resource "azurerm_kubernetes_cluster" "inference_aks" {
   identity {
     type = "SystemAssigned"
   }
-  tags                          = local.common_tags
+  tags = local.common_tags
 }
 
 # Attach AKS as Inference Cluster
