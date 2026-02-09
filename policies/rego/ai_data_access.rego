@@ -11,13 +11,10 @@ package sec_iac.ai_data_access
 import future.keywords.if
 import future.keywords.in
 
-# ────────────────────────────────────────────────────────────────────────────────
 # Default deny — critical for auditability and zero-trust
-# ────────────────────────────────────────────────────────────────────────────────
 default allow := false
 
 # Helper: Business hours check (UTC, Mon–Fri 09:00–17:00)
-# Using time.weekday and time.clock for explicit, auditable logic
 business_hours if {
     day := time.weekday(input.context.timestamp)
     day in {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday"}
@@ -27,7 +24,6 @@ business_hours if {
     hour < 17
 }
 
-# Allowed: Read access to internal (non-PII) data during business hours
 allow if {
     business_hours
     input.action == "read"
@@ -35,7 +31,6 @@ allow if {
     input.resource.sensitivity == "internal"
 }
 
-# Allowed: Write access — stricter rules
 allow if {
     business_hours
     input.action == "write"
@@ -44,29 +39,79 @@ allow if {
     input.user.department == data.ai_teams.approved_departments[input.resource.type]
 }
 
-# ────────────────────────────────────────────────────────────────────────────────
-# Explainability: Collect denial reasons (very valuable for auditors & debugging)
-# ────────────────────────────────────────────────────────────────────────────────
-reasons contains msg if {
-    not allow
+# Explainability: Collect denial reasons using multiple independent rules
 
-    issues := [
-        "Outside business hours" if not business_hours else "",
-        sprintf("Insufficient clearance: got %v, need medium/high", [input.user.clearance]) if not (input.user.clearance in {"medium", "high"}) else "",
-        sprintf("Write requires high clearance only (got %v)", [input.user.clearance]) if input.action == "write" and input.user.clearance != "high" else "",
-        "PII data access forbidden" if input.resource.sensitivity == "PII" else "",
-        sprintf("Department mismatch: user=%v, required=%v", [
-            input.user.department,
-            data.ai_teams.approved_departments[input.resource.type]
-        ]) if input.user.department != data.ai_teams.approved_departments[input.resource.type] else ""
-    ]
-
-    msg := trim_space(concat("; ", [i | i := issues[_]; i != ""]))
-    msg != ""
+# Helper to check if any specific reason exists
+has_specific_reason if {
+    not business_hours
 }
 
-# Fallback generic reason if nothing specific matched (safety net)
+has_specific_reason if {
+    input.action == "read"
+    not (input.user.clearance in {"medium", "high"})
+}
+
+has_specific_reason if {
+    input.action == "write"
+    input.user.clearance != "high"
+}
+
+has_specific_reason if {
+    input.action == "write"
+    input.resource.sensitivity == "PII"
+}
+
+has_specific_reason if {
+    input.action == "write"
+    input.user.department != data.ai_teams.approved_departments[input.resource.type]
+}
+
+has_specific_reason if {
+    input.action == "read"
+    input.resource.sensitivity != "internal"
+}
+
+# Individual reason rules
+reasons contains "Outside business hours" if {
+    not allow
+    not business_hours
+}
+
+reasons contains sprintf("Read action: insufficient clearance: got %v, need medium/high", [input.user.clearance]) if {
+    not allow
+    input.action == "read"
+    not (input.user.clearance in {"medium", "high"})
+}
+
+reasons contains sprintf("Write action: requires high clearance only (got %v)", [input.user.clearance]) if {
+    not allow
+    input.action == "write"
+    input.user.clearance != "high"
+}
+
+reasons contains "Write action: PII data write access forbidden" if {
+    not allow
+    input.action == "write"
+    input.resource.sensitivity == "PII"
+}
+
+reasons contains sprintf("Write action: department mismatch: user=%v, required=%v", [
+    input.user.department,
+    data.ai_teams.approved_departments[input.resource.type]
+]) if {
+    not allow
+    input.action == "write"
+    input.user.department != data.ai_teams.approved_departments[input.resource.type]
+}
+
+reasons contains sprintf("Read action: resource sensitivity mismatch: got %v, need internal", [input.resource.sensitivity]) if {
+    not allow
+    input.action == "read"
+    input.resource.sensitivity != "internal"
+}
+
+# Fallback generic reason - only if no specific reason applies
 reasons contains "Access denied — policy violation" if {
     not allow
-    count(reasons) == 0
+    not has_specific_reason
 }
