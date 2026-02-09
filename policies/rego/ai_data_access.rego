@@ -63,7 +63,7 @@ has_specific_reason if {
     input.resource.sensitivity != "internal"
 }
 
-# Individual reason rules
+# Individual reason rules - WITH "if" keyword
 reasons contains "Outside business hours" if {
     not allow
     not business_hours
