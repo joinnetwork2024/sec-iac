@@ -10,6 +10,7 @@ package sec_iac.ai_data_access
 
 import future.keywords.if
 import future.keywords.in
+import rego.v1
 
 # Default deny — critical for auditability and zero-trust
 default allow := false
@@ -72,46 +73,47 @@ has_specific_reason if {
 }
 
 # Individual reason rules
-reasons contains "Outside business hours" if {
+reasons[msg] {
     not allow
-    not business_hours
+
+    # Collect one message per failing condition (independent evaluation)
+    # Each block is guarded by its condition → only matching ones contribute
+
+    msg := "Outside business hours" {
+        not business_hours
+    }
+
+    msg := sprintf("Read action: insufficient clearance: got %v, need medium/high", [input.user.clearance]) {
+        input.action == "read"
+        not (input.user.clearance in {"medium", "high"})
+    }
+
+    msg := sprintf("Write action: requires high clearance only (got %v)", [input.user.clearance]) {
+        input.action == "write"
+        input.user.clearance != "high"
+    }
+
+    msg := "Write action: PII data write access forbidden" {
+        input.action == "write"
+        input.resource.sensitivity == "PII"
+    }
+
+    msg := sprintf("Write action: department mismatch: user=%v, required=%v", [
+        input.user.department,
+        data.ai_teams.approved_departments[input.resource.type]
+    ]) {
+        input.action == "write"
+        input.user.department != data.ai_teams.approved_departments[input.resource.type]
+    }
+
+    msg := sprintf("Read action: resource sensitivity mismatch: got %v, need internal", [input.resource.sensitivity]) {
+        input.action == "read"
+        input.resource.sensitivity != "internal"
+    }
 }
 
-reasons contains sprintf("Read action: insufficient clearance: got %v, need medium/high", [input.user.clearance]) if {
+# Fallback only if no specific reasons were generated
+reasons["Access denied — policy violation"] {
     not allow
-    input.action == "read"
-    not (input.user.clearance in {"medium", "high"})
-}
-
-reasons contains sprintf("Write action: requires high clearance only (got %v)", [input.user.clearance]) if {
-    not allow
-    input.action == "write"
-    input.user.clearance != "high"
-}
-
-reasons contains "Write action: PII data write access forbidden" if {
-    not allow
-    input.action == "write"
-    input.resource.sensitivity == "PII"
-}
-
-reasons contains sprintf("Write action: department mismatch: user=%v, required=%v", [
-    input.user.department,
-    data.ai_teams.approved_departments[input.resource.type]
-]) if {
-    not allow
-    input.action == "write"
-    input.user.department != data.ai_teams.approved_departments[input.resource.type]
-}
-
-reasons contains sprintf("Read action: resource sensitivity mismatch: got %v, need internal", [input.resource.sensitivity]) if {
-    not allow
-    input.action == "read"
-    input.resource.sensitivity != "internal"
-}
-
-# Fallback generic reason - only if no specific reason applies
-reasons contains "Access denied — policy violation" if {
-    not allow
-    not has_specific_reason
+    count(reasons) == 0
 }
