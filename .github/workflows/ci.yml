@@ -69,7 +69,7 @@ jobs:
 ############################################
 # JOB 1.1: Validate AI Data Access Policies
 ############################################
-  ai-image-security:
+  Validate-AI-Data-Access-Policies:
     runs-on: ubuntu-latest
   
     steps:
