@@ -1,0 +1,34 @@
+name: Validate AI Data Access Policies
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'policies/rego/**'
+  pull_request:
+    paths:
+      - 'policies/rego/**'
+
+jobs:
+  test-policies:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup OPA
+        uses: open-policy-agent/setup-opa@v2
+        with:
+          version: latest
+
+      - name: Test Rego policies
+        run: opa test ./policies/rego -v
+
+      - name: Build policy bundle (for later deployment)
+        run: |
+          opa build -b policies/ -o bundle.tar.gz
+      - name: Upload bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opa-policy-bundle
+          path: bundle.tar.gz

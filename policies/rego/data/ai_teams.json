@@ -1,0 +1,8 @@
+{
+  "approved_departments": {
+    "training-data": "AI-Research",
+    "inference-data": "AI-Research",
+    "public-dataset": ["AI-Research", "Data-Platform", "Analytics"]
+  },
+  "high_clearance_teams": ["AI-Research", "Security", "Compliance"]
+}
