@@ -10,7 +10,6 @@ package sec_iac.ai_data_access
 
 import future.keywords.if
 import future.keywords.in
-import rego.v1
 
 # Default deny — critical for auditability and zero-trust
 default allow := false
