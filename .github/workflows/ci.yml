@@ -21,26 +21,26 @@ jobs:
     env:
       IMAGE_TO_SCAN: public.ecr.aws/docker/library/python:3.11-slim
     
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-        - name: Setup OPA
-          uses: open-policy-agent/setup-opa@v2
-          with:
-            version: latest
+      - name: Setup OPA
+        uses: open-policy-agent/setup-opa@v2
+        with:
+          version: latest
 
-        - name: Test Rego policies
-          run: opa test ./policies/rego -v
+      - name: Test Rego policies
+        run: opa test ./policies/rego -v
 
-        - name: Build policy bundle (for later deployment)
-          run: |
-            opa build -b policies/ -o bundle.tar.gz
-        - name: Upload bundle artifact
-          uses: actions/upload-artifact@v4
-          with:
-            name: opa-policy-bundle
-            path: bundle.tar.gz
+      - name: Build policy bundle (for later deployment)
+        run: |
+          opa build -b policies/ -o bundle.tar.gz
+      - name: Upload bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opa-policy-bundle
+          path: bundle.tar.gz
   #   steps:
   #     - name: Checkout repository
   #       uses: actions/checkout@v4
@@ -179,25 +179,25 @@ jobs:
 ############################################
 # JOB 3: test-policies
 ############################################
-  test-policies:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  # test-policies:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
 
-      - name: Setup OPA
-        uses: open-policy-agent/setup-opa@v2
-        with:
-          version: latest
+  #     - name: Setup OPA
+  #       uses: open-policy-agent/setup-opa@v2
+  #       with:
+  #         version: latest
 
-      - name: Test Rego policies
-        run: opa test ./policies/rego -v
+  #     - name: Test Rego policies
+  #       run: opa test ./policies/rego -v
 
-      - name: Build policy bundle (for later deployment)
-        run: |
-          opa build -b policies/ -o bundle.tar.gz
-      - name: Upload bundle artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: opa-policy-bundle
-          path: bundle.tar.gz
+  #     - name: Build policy bundle (for later deployment)
+  #       run: |
+  #         opa build -b policies/ -o bundle.tar.gz
+  #     - name: Upload bundle artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: opa-policy-bundle
+  #         path: bundle.tar.gz
