@@ -72,31 +72,36 @@ has_specific_reason if {
 }
 
 # Individual reason rules
+# Explainability: Collect denial reasons (classic partial set – compatible with all OPA versions)
+# Each matching guard contributes one message to the set
+# No 'if' in head for partial rules; body uses { guard; assignment }
 reasons[msg] {
     not allow
 
-    # Collect one message per failing condition (independent evaluation)
-    # Each block is guarded by its condition → only matching ones contribute
-
+    # Outside business hours
     msg := "Outside business hours" {
         not business_hours
     }
 
+    # Read: insufficient clearance
     msg := sprintf("Read action: insufficient clearance: got %v, need medium/high", [input.user.clearance]) {
         input.action == "read"
         not (input.user.clearance in {"medium", "high"})
     }
 
+    # Write: requires high clearance
     msg := sprintf("Write action: requires high clearance only (got %v)", [input.user.clearance]) {
         input.action == "write"
         input.user.clearance != "high"
     }
 
+    # Write: PII forbidden
     msg := "Write action: PII data write access forbidden" {
         input.action == "write"
         input.resource.sensitivity == "PII"
     }
 
+    # Write: department mismatch
     msg := sprintf("Write action: department mismatch: user=%v, required=%v", [
         input.user.department,
         data.ai_teams.approved_departments[input.resource.type]
@@ -105,13 +110,14 @@ reasons[msg] {
         input.user.department != data.ai_teams.approved_departments[input.resource.type]
     }
 
+    # Read: wrong sensitivity
     msg := sprintf("Read action: resource sensitivity mismatch: got %v, need internal", [input.resource.sensitivity]) {
         input.action == "read"
         input.resource.sensitivity != "internal"
     }
 }
 
-# Fallback only if no specific reasons were generated
+# Fallback generic reason – only triggers if no specific reasons were added
 reasons["Access denied — policy violation"] {
     not allow
     count(reasons) == 0
