@@ -22,6 +22,57 @@ jobs:
       IMAGE_TO_SCAN: public.ecr.aws/docker/library/python:3.11-slim
     
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Conftest
+        run: |
+          curl -L https://github.com/open-policy-agent/conftest/releases/download/v0.53.0/conftest_0.53.0_Linux_x86_64.tar.gz | tar -xz
+          sudo mv conftest /usr/local/bin/conftest
+
+      ############################################
+      # Trivy Image Scan
+      ############################################
+      - name: Scan AI image with Trivy
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v ${{ github.workspace }}:/work \
+            aquasec/trivy:latest \
+            image \
+            --format json \
+            --output /work/trivy.json \
+            "$IMAGE_TO_SCAN"
+
+      ############################################
+      # Normalize CVE data for OPA
+      ############################################
+      - name: Normalize vulnerability data
+        run: |
+          jq '{
+            vulnerabilities: {
+              critical: ([.Results[].Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length),
+              high: ([.Results[].Vulnerabilities[]? | select(.Severity=="HIGH")] | length)
+            }
+          }' trivy.json > opa-input.json
+
+      ############################################
+      # OPA / Rego Enforcement
+      ############################################
+      - name: Enforce AI image security policies
+        run: |
+          conftest test opa-input.json \
+            --policy policies/rego \
+            --namespace sec_iac.ai_ml.security \
+            --fail-on-warn   
+
+############################################
+# JOB 1.1: Validate AI Data Access Policies
+############################################
+  ai-image-security:
+    runs-on: ubuntu-latest
+  
+    steps:
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -41,50 +92,7 @@ jobs:
         with:
           name: opa-policy-bundle
           path: bundle.tar.gz
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-
-  #     - name: Install Conftest
-  #       run: |
-  #         curl -L https://github.com/open-policy-agent/conftest/releases/download/v0.53.0/conftest_0.53.0_Linux_x86_64.tar.gz | tar -xz
-  #         sudo mv conftest /usr/local/bin/conftest
-
-  #     ############################################
-  #     # Trivy Image Scan
-  #     ############################################
-  #     - name: Scan AI image with Trivy
-  #       run: |
-  #         docker run --rm \
-  #           -v /var/run/docker.sock:/var/run/docker.sock \
-  #           -v ${{ github.workspace }}:/work \
-  #           aquasec/trivy:latest \
-  #           image \
-  #           --format json \
-  #           --output /work/trivy.json \
-  #           "$IMAGE_TO_SCAN"
-
-  #     ############################################
-  #     # Normalize CVE data for OPA
-  #     ############################################
-  #     - name: Normalize vulnerability data
-  #       run: |
-  #         jq '{
-  #           vulnerabilities: {
-  #             critical: ([.Results[].Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length),
-  #             high: ([.Results[].Vulnerabilities[]? | select(.Severity=="HIGH")] | length)
-  #           }
-  #         }' trivy.json > opa-input.json
-
-  #     ############################################
-  #     # OPA / Rego Enforcement
-  #     ############################################
-  #     - name: Enforce AI image security policies
-  #       run: |
-  #         conftest test opa-input.json \
-  #           --policy policies/rego \
-  #           --namespace sec_iac.ai_ml.security \
-  #           --fail-on-warn   
+  
 ############################################
 # JOB 2: Terraform IaC Security (AWS + Azure)
 ############################################
@@ -175,29 +183,3 @@ jobs:
         with:
           name: tf-plan-${{ matrix.cloud }}
           path: environments/dev/${{ matrix.cloud }}/plan.json
-
-############################################
-# JOB 3: test-policies
-############################################
-  # test-policies:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-
-  #     - name: Setup OPA
-  #       uses: open-policy-agent/setup-opa@v2
-  #       with:
-  #         version: latest
-
-  #     - name: Test Rego policies
-  #       run: opa test ./policies/rego -v
-
-  #     - name: Build policy bundle (for later deployment)
-  #       run: |
-  #         opa build -b policies/ -o bundle.tar.gz
-  #     - name: Upload bundle artifact
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: opa-policy-bundle
-  #         path: bundle.tar.gz
